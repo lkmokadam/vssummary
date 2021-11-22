@@ -51,7 +51,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function readTasks(): Promise<Task[]> {
   const tasks: Task[] = [];
-  const uriList = await vscode.workspace.findFiles("**/*.*");
+  const uriList = await vscode.workspace.findFiles("**/*.md");
   for (const uri of uriList) {
     const document = await vscode.workspace.openTextDocument(uri);
     let text = document.getText();
