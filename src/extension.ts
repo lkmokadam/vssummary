@@ -1,18 +1,11 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import path = require("path");
 
 let panel: vscode.WebviewPanel | null = null;
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-  // The command has been defined in the package.json file
-  // Now provide the implementation of the command with registerCommand
-  // The commandId parameter must match the command field in package.json
   let disposable = vscode.commands.registerCommand(
-    "vssummary.helloWorld",
+    "vssummary.showAgenda",
     async () => {
       const tasks = await readTasks();
       const sortedTasks = tasks.sort((a: Task, b: Task) => a.compareTo(b));
@@ -43,7 +36,6 @@ export function activate(context: vscode.ExtensionContext) {
 
         panel.onDidDispose(
           () => {
-            // When the panel is closed, cancel any future updates to the webview content
             panel = null;
           },
           null,
@@ -59,7 +51,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function readTasks(): Promise<Task[]> {
   const tasks: Task[] = [];
-  const uriList = await vscode.workspace.findFiles("**/*.*", null, 100);
+  const uriList = await vscode.workspace.findFiles("**/*.*");
   for (const uri of uriList) {
     const document = await vscode.workspace.openTextDocument(uri);
     let text = document.getText();
@@ -85,11 +77,6 @@ async function readTasks(): Promise<Task[]> {
     }
   }
   return tasks;
-}
-
-function convertLineToTask(line: string) {
-  var rx = /(.*)@(.*)\n/g;
-  const tokens = line.split(/\s+/);
 }
 
 enum TaskStatus {
@@ -139,7 +126,6 @@ class Task {
   }
 
   static isSubTask(line: string) {
-    console.log(line);
     line = line.trim();
     return (
       line.startsWith("[ ]") || line.startsWith("[-]") || line.startsWith("[x]")
@@ -165,7 +151,9 @@ class Task {
   }
 
   generateHtml(showSubTasks: boolean) {
-    let subtasks = "";
+    let subtasks = `<td style="border: 1px solid gray;">
+		hidden
+	</td>`;
     if (showSubTasks) {
       subtasks = `<td style="border: 1px solid gray;">
 		<div style="margin: 10px 20px;">${this.subtasks.join("<br>")}</div>
@@ -174,7 +162,7 @@ class Task {
     return `
 		<tr style="border: 1px solid gray;">
 			<td style="border: 1px solid gray;">
-				<div style="margin: 10px 20px;">
+				<div style="margin: 10px 10px;">
 					<a href="${this.location}">link</a>
 				</div>
 			</td>
@@ -239,10 +227,13 @@ function getWebviewContent(tasks: Task[], showSubTasks: boolean) {
 
 		
 		<body>
-		<div id="show-subtasks-button" style="border: 1px solid gray; padding: 5px;"> Show subtasks</div>
-		<div id="hide-subtasks-button" style="border: 1px solid gray; padding: 5px;"> Hide subtasks</div>
-		<table style="border: 1px solid gray; border-collapse: collapse;">
+			<div id="show-subtasks-button" style="border: 1px solid gray; padding: 5px;"> Show subtasks</div>
+			<div id="hide-subtasks-button" style="border: 1px solid gray; padding: 5px;"> Hide subtasks</div>
+			<table style="border: 1px solid gray; border-collapse: collapse;">
 				<tr style="border: 1px solid gray;">
+					<th style="border: 1px solid gray;">
+						Link
+					</th>
 					<th style="border: 1px solid gray;">
 						Status
 					</th>
@@ -255,8 +246,11 @@ function getWebviewContent(tasks: Task[], showSubTasks: boolean) {
 					<th style="border: 1px solid gray;">
 						Task
 					</th>
+					<th style="border: 1px solid gray;">
+						Subtasks
+					</th>
 				</tr>
-			${tasks.map((t) => t.generateHtml(showSubTasks))}
+				${tasks.map((t) => t.generateHtml(showSubTasks)).join()}
 			</table>
 			<script>
 				(function() {
@@ -291,5 +285,5 @@ function getWebviewContent(tasks: Task[], showSubTasks: boolean) {
 		</body>
 	</html>`;
 }
-// this method is called when your extension is deactivated
+
 export function deactivate() {}
